@@ -11,8 +11,40 @@ const DATA_FILE = path.join(__dirname, 'reviews.json');
 // Middleware
 app.use(express.json());
 
-// *** ЭТА СТРОЧКА ОТДАЁТ ВСЁ ИЗ ПАПКИ public ***
-app.use(express.static(path.join(__dirname, 'public')));
+// ===== ЖЁСТКО ОТДАЁМ index.html =====
+app.get('/', (req, res) => {
+    // ПРОВЕРЯЕМ ВСЕ ВОЗМОЖНЫЕ МЕСТА
+    const possiblePaths = [
+        path.join(__dirname, 'public', 'index.html'),
+        path.join(__dirname, 'index.html'),
+        path.join('/app', 'public', 'index.html'),
+        path.join('/app', 'index.html')
+    ];
+
+    for (const indexPath of possiblePaths) {
+        if (fs.existsSync(indexPath)) {
+            console.log(`✅ Найден index.html: ${indexPath}`);
+            return res.sendFile(indexPath);
+        }
+    }
+
+    // Если ничего не нашли
+    console.log('❌ index.html НЕ НАЙДЕН!');
+    console.log('📁 __dirname =', __dirname);
+    console.log('📂 Файлы в __dirname:', fs.readdirSync(__dirname));
+    
+    if (fs.existsSync(path.join(__dirname, 'public'))) {
+        console.log('📂 Файлы в public:', fs.readdirSync(path.join(__dirname, 'public')));
+    }
+
+    res.status(404).send(`
+        <h1>❌ index.html не найден</h1>
+        <p>Текущая папка: ${__dirname}</p>
+        <p>Файлы в папке: ${fs.readdirSync(__dirname).join(', ')}</p>
+        ${fs.existsSync(path.join(__dirname, 'public')) ? `<p>Файлы в public: ${fs.readdirSync(path.join(__dirname, 'public')).join(', ')}</p>` : '<p>Папка public не найдена</p>'}
+    `);
+});
+// ======================================
 
 // ---- Вспомогательные функции ----
 function readReviews() {
@@ -85,5 +117,9 @@ app.post('/api/reviews', (req, res) => {
 app.listen(PORT, () => {
     console.log(`✅ Сервер запущен на порту ${PORT}`);
     console.log(`📊 API: /api/reviews`);
-    console.log(`📁 Отдаём статику из: ${path.join(__dirname, 'public')}`);
+    console.log(`📁 __dirname = ${__dirname}`);
+    console.log(`📂 Файлы в __dirname:`, fs.readdirSync(__dirname));
+    if (fs.existsSync(path.join(__dirname, 'public'))) {
+        console.log(`📂 Файлы в public:`, fs.readdirSync(path.join(__dirname, 'public')));
+    }
 });
