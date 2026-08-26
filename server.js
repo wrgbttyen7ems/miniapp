@@ -1,7 +1,6 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
-const cors = require('cors');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -10,18 +9,10 @@ const PORT = process.env.PORT || 3000;
 const DATA_FILE = path.join(__dirname, 'reviews.json');
 
 // Middleware
-app.use(cors());
 app.use(express.json());
 
-// ---- ПРИНУДИТЕЛЬНАЯ ОТДАЧА index.html ----
-app.get('/', (req, res) => {
-    const indexPath = path.join(__dirname, 'public', 'index.html');
-    if (fs.existsSync(indexPath)) {
-        res.sendFile(indexPath);
-    } else {
-        res.send('index.html не найден в папке public');
-    }
-});
+// *** ЭТА СТРОЧКА ОТДАЁТ ВСЁ ИЗ ПАПКИ public ***
+app.use(express.static(path.join(__dirname, 'public')));
 
 // ---- Вспомогательные функции ----
 function readReviews() {
@@ -90,12 +81,9 @@ app.post('/api/reviews', (req, res) => {
     res.status(201).json({ success: true, review: newReview });
 });
 
-// ---- ОТДАЁМ СТАТИКУ ИЗ public (как запасной вариант) ----
-app.use(express.static(path.join(__dirname, 'public')));
-
 // Запуск сервера
 app.listen(PORT, () => {
     console.log(`✅ Сервер запущен на порту ${PORT}`);
     console.log(`📊 API: /api/reviews`);
-    console.log(`📁 Папка public: ${path.join(__dirname, 'public')}`);
+    console.log(`📁 Отдаём статику из: ${path.join(__dirname, 'public')}`);
 });
