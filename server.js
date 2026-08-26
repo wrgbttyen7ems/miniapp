@@ -12,7 +12,7 @@ const DATA_FILE = path.join(__dirname, 'reviews.json');
 // Middleware
 app.use(cors()); // разрешаем запросы с любых источников (для разработки)
 app.use(express.json());
-app.use(express.static(__dirname));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // ---- Вспомогательные функции для работы с JSON ----
 function readReviews() {
