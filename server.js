@@ -1,125 +1,69 @@
 const express = require('express');
-const fs = require('fs');
-const path = require('path');
+const cors = require('cors');
+const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-
-// Путь к файлу с данными
-const DATA_FILE = path.join(__dirname, 'reviews.json');
-
-// Middleware
+app.use(cors());
 app.use(express.json());
+app.use(express.static('.')); // для раздачи index.html
 
-// ===== ЖЁСТКО ОТДАЁМ index.html =====
-app.get('/', (req, res) => {
-    // ПРОВЕРЯЕМ ВСЕ ВОЗМОЖНЫЕ МЕСТА
-    const possiblePaths = [
-        path.join(__dirname, 'public', 'index.html'),
-        path.join(__dirname, 'index.html'),
-        path.join('/app', 'public', 'index.html'),
-        path.join('/app', 'index.html')
-    ];
+// Подключение к Supabase через переменные окружения
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_KEY;
 
-    for (const indexPath of possiblePaths) {
-        if (fs.existsSync(indexPath)) {
-            console.log(`✅ Найден index.html: ${indexPath}`);
-            return res.sendFile(indexPath);
+if (!supabaseUrl || !supabaseKey) {
+  console.error("ОШИБКА: Не заданы SUPABASE_URL или SUPABASE_KEY в Environment Variables!");
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+// GET /api/reviews — получение последних 50 отзывов
+app.get('/api/reviews', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('reviews')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (error) throw error;
+    res.json(data);
+  } catch (error) {
+    console.error('Ошибка при получении отзывов:', error.message);
+    res.status(500).json({ error: 'Не удалось загрузить отзывы' });
+  }
+});
+
+// POST /api/reviews — добавление нового отзыва
+app.post('/api/reviews', async (req, res) => {
+  try {
+    const { user_id, text, rating } = req.body;
+
+    if (!text || text.trim() === '') {
+      return res.status(400).json({ error: 'Текст отзыва не может быть пустым' });
+    }
+
+    const { data, error } = await supabase
+      .from('reviews')
+      .insert([
+        {
+          user_id: user_id || null,
+          text: text,
+          rating: rating || 5
         }
-    }
+      ])
+      .select();
 
-    // Если ничего не нашли
-    console.log('❌ index.html НЕ НАЙДЕН!');
-    console.log('📁 __dirname =', __dirname);
-    console.log('📂 Файлы в __dirname:', fs.readdirSync(__dirname));
-    
-    if (fs.existsSync(path.join(__dirname, 'public'))) {
-        console.log('📂 Файлы в public:', fs.readdirSync(path.join(__dirname, 'public')));
-    }
+    if (error) throw error;
 
-    res.status(404).send(`
-        <h1>❌ index.html не найден</h1>
-        <p>Текущая папка: ${__dirname}</p>
-        <p>Файлы в папке: ${fs.readdirSync(__dirname).join(', ')}</p>
-        ${fs.existsSync(path.join(__dirname, 'public')) ? `<p>Файлы в public: ${fs.readdirSync(path.join(__dirname, 'public')).join(', ')}</p>` : '<p>Папка public не найдена</p>'}
-    `);
-});
-// ======================================
-
-// ---- Вспомогательные функции ----
-function readReviews() {
-    if (!fs.existsSync(DATA_FILE)) return [];
-    try {
-        const data = fs.readFileSync(DATA_FILE, 'utf8');
-        return JSON.parse(data);
-    } catch (err) {
-        console.error('Ошибка чтения файла:', err);
-        return [];
-    }
-}
-
-function writeReviews(reviews) {
-    fs.writeFileSync(DATA_FILE, JSON.stringify(reviews, null, 2), 'utf8');
-}
-
-function computeStats(reviews) {
-    const total = reviews.length;
-    if (total === 0) {
-        return { total: 0, average: 0, distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } };
-    }
-    const sum = reviews.reduce((acc, r) => acc + r.rating, 0);
-    const avg = sum / total;
-    const dist = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-    reviews.forEach(r => {
-        if (r.rating >= 1 && r.rating <= 5) {
-            dist[r.rating] = (dist[r.rating] || 0) + 1;
-        }
-    });
-    return {
-        total,
-        average: Math.round(avg * 10) / 10,
-        distribution: dist
-    };
-}
-
-// ---- API ----
-app.get('/api/reviews', (req, res) => {
-    const reviews = readReviews();
-    const stats = computeStats(reviews);
-    const recent = reviews.slice(-50).reverse();
-    res.json({ ...stats, reviews: recent });
+    res.status(201).json({ success: true, review: data[0] });
+  } catch (error) {
+    console.error('Ошибка при сохранении отзыва:', error.message);
+    res.status(500).json({ error: 'Не удалось сохранить отзыв' });
+  }
 });
 
-app.post('/api/reviews', (req, res) => {
-    const { rating, nickname, comment, user_id } = req.body;
-
-    if (!rating || typeof rating !== 'number' || rating < 1 || rating > 5) {
-        return res.status(400).json({ error: 'Рейтинг должен быть от 1 до 5' });
-    }
-
-    const reviews = readReviews();
-    const newReview = {
-        id: Date.now() + Math.random(),
-        rating: rating,
-        nickname: (nickname || 'Аноним').trim().slice(0, 50),
-        comment: (comment || '').trim().slice(0, 500),
-        user_id: user_id || null,
-        created_at: new Date().toISOString()
-    };
-
-    reviews.push(newReview);
-    writeReviews(reviews);
-
-    res.status(201).json({ success: true, review: newReview });
-});
-
-// Запуск сервера
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`✅ Сервер запущен на порту ${PORT}`);
-    console.log(`📊 API: /api/reviews`);
-    console.log(`📁 __dirname = ${__dirname}`);
-    console.log(`📂 Файлы в __dirname:`, fs.readdirSync(__dirname));
-    if (fs.existsSync(path.join(__dirname, 'public'))) {
-        console.log(`📂 Файлы в public:`, fs.readdirSync(path.join(__dirname, 'public')));
-    }
+  console.log(`Сервер запущен на порту ${PORT}`);
 });
