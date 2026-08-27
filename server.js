@@ -11,12 +11,13 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static(__dirname));
 
-// Берем URL из Environment Variables или используем прямую ссылку на твой проект
+// Хардкодим URL вашего проекта (он публичный и безопасный)
 const supabaseUrl = process.env.SUPABASE_URL || 'https://gazttkzrjoctrkbkiwpd.supabase.co';
+// Ключ берем из переменных Render
 const supabaseKey = process.env.SUPABASE_KEY;
 
 if (!supabaseKey) {
-  console.error("ОШИБКА: Не задан SUPABASE_KEY в Render Environment Variables!");
+  console.error("ОШИБКА: Забыли указать SUPABASE_KEY в Render Environment Variables!");
 }
 
 const supabase = createClient(supabaseUrl, supabaseKey || '');
