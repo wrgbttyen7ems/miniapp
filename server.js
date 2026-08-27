@@ -99,6 +99,7 @@ app.get('/api/reviews', async (req, res) => {
 });
 
 // 2. Публикация отзыва
+// 2. Публикация отзыва
 app.post('/api/reviews', async (req, res) => {
     try {
         const { rating, nickname, comment, text, user_id } = req.body;
@@ -108,8 +109,28 @@ app.post('/api/reviews', async (req, res) => {
             return res.status(400).json({ error: 'Рейтинг должен быть от 1 до 5' });
         }
 
+        // --- ФИЛЬТР: Отзывы ниже 4 звёзд игнорируем ---
+        if (reviewRating < 4) {
+            // Возвращаем успешный ответ клиенту, чтобы фронтенд показал "Спасибо за отзыв!",
+            // но в базу данных (Supabase) ничего НЕ сохраняем.
+            return res.status(201).json({ 
+                success: true, 
+                message: 'Отзыв принят',
+                review: {
+                    id: Date.now(),
+                    rating: reviewRating,
+                    nickname: (nickname || 'Аноним').trim().slice(0, 50),
+                    comment: (comment || text || '').trim().slice(0, 500),
+                    user_id: user_id || null,
+                    created_at: new Date().toISOString()
+                }
+            });
+        }
+        // ----------------------------------------------
+
         const reviewComment = (comment || text || '').trim().slice(0, 500);
 
+        // В базу попадают только отзывы на 4 и 5 звёзд
         const { data, error } = await supabase
             .from('reviews')
             .insert([
@@ -139,7 +160,6 @@ app.post('/api/reviews', async (req, res) => {
         res.status(500).json({ error: 'Не удалось сохранить отзыв' });
     }
 });
-
 // Запуск сервера
 app.listen(PORT, () => {
     console.log(`✅ Сервер запущен на порту ${PORT}`);
