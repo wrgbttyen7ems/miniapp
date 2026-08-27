@@ -37,11 +37,16 @@ app.get('/api/reviews', async (req, res) => {
 });
 
 // POST /api/reviews
+// POST /api/reviews — добавление отзыва
 app.post('/api/reviews', async (req, res) => {
   try {
-    const { user_id, text, rating } = req.body;
+    console.log('Пришедшие данные:', req.body); // Логируем в консоль Render для проверки
 
-    if (!text || text.trim() === '') {
+    // Собираем текст из любого возможного названия поля
+    const reviewText = req.body.text || req.body.comment || req.body.review || req.body.message || req.body.content;
+    const { user_id, rating } = req.body;
+
+    if (!reviewText || String(reviewText).trim() === '') {
       return res.status(400).json({ error: 'Текст отзыва не может быть пустым' });
     }
 
@@ -50,7 +55,7 @@ app.post('/api/reviews', async (req, res) => {
       .insert([
         {
           user_id: user_id || null,
-          text: text,
+          text: String(reviewText).trim(),
           rating: rating || 5
         }
       ])
