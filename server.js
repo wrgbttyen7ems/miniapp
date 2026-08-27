@@ -7,25 +7,19 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Раздача статики
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static(__dirname));
 
-// Жёстко задаем URL проекта Supabase, если переменная окружения пустая
-const supabaseUrl = process.env.SUPABASE_URL || 'https://gazttkzrjoctrkbkiwpd.supabase.co';
-const supabaseKey = process.env.SUPABASE_KEY;
+// Принудительно очищаем URL от любых лишних пробелов/переносов
+const rawUrl = process.env.SUPABASE_URL || 'https://gazttkzrjoctrkbkiwpd.supabase.co';
+const supabaseUrl = rawUrl.trim();
+const supabaseKey = (process.env.SUPABASE_KEY || '').trim();
 
-// Проверка ключа в консоли при старте
-if (!supabaseKey) {
-  console.error("❌ ОШИБКА: SUPABASE_KEY не найден в process.env!");
-} else {
-  console.log("✅ SUPABASE_KEY успешно загружен");
-}
+console.log('Используемый URL:', `"${supabaseUrl}"`);
 
-// Передаем гарантированно непустую строку URL
-const supabase = createClient(supabaseUrl, supabaseKey || 'dummy-key-for-boot');
+const supabase = createClient(supabaseUrl, supabaseKey);
 
-// GET /api/reviews — получение отзывов из Supabase
+// GET /api/reviews
 app.get('/api/reviews', async (req, res) => {
   try {
     const { data, error } = await supabase
@@ -42,7 +36,7 @@ app.get('/api/reviews', async (req, res) => {
   }
 });
 
-// POST /api/reviews — добавление отзыва в Supabase
+// POST /api/reviews
 app.post('/api/reviews', async (req, res) => {
   try {
     const { user_id, text, rating } = req.body;
