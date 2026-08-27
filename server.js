@@ -19,7 +19,7 @@ console.log('Используемый URL:', `"${supabaseUrl}"`);
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// GET /api/reviews
+// GET /api/reviews — получение отзывов
 app.get('/api/reviews', async (req, res) => {
   try {
     const { data, error } = await supabase
@@ -28,8 +28,22 @@ app.get('/api/reviews', async (req, res) => {
       .order('created_at', { ascending: false })
       .limit(50);
 
-    if (error) throw error;
-    res.json(data || []);
+    if (error) {
+      console.error('Ошибка Supabase при чтении:', error);
+      throw error;
+    }
+
+    // Форматируем массив, чтобы фронтенд точно получил нужные поля
+    const formattedReviews = (data || []).map(r => ({
+      id: r.id,
+      user_id: r.user_id,
+      author: r.user_id ? `Пользователь ${r.user_id}` : 'Аноним',
+      text: r.text,
+      rating: r.rating || 5,
+      date: r.created_at
+    }));
+
+    res.json(formattedReviews);
   } catch (error) {
     console.error('Ошибка при получении отзывов:', error.message);
     res.status(500).json({ error: 'Не удалось загрузить отзывы' });
