@@ -11,14 +11,15 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static(__dirname));
 
-const supabaseUrl = process.env.SUPABASE_URL;
+// Берем URL из Environment Variables или используем прямую ссылку на твой проект
+const supabaseUrl = process.env.SUPABASE_URL || 'https://gazttkzrjoctrkbkiwpd.supabase.co';
 const supabaseKey = process.env.SUPABASE_KEY;
 
-if (!supabaseUrl || !supabaseKey) {
-  console.error("ОШИБКА: Не заданы SUPABASE_URL или SUPABASE_KEY в Render Environment Variables!");
+if (!supabaseKey) {
+  console.error("ОШИБКА: Не задан SUPABASE_KEY в Render Environment Variables!");
 }
 
-const supabase = createClient(supabaseUrl || '', supabaseKey || '');
+const supabase = createClient(supabaseUrl, supabaseKey || '');
 
 // GET /api/reviews — получение отзывов из Supabase
 app.get('/api/reviews', async (req, res) => {
