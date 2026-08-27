@@ -11,16 +11,19 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static(__dirname));
 
-// Хардкодим URL вашего проекта (он публичный и безопасный)
+// Жёстко задаем URL проекта Supabase, если переменная окружения пустая
 const supabaseUrl = process.env.SUPABASE_URL || 'https://gazttkzrjoctrkbkiwpd.supabase.co';
-// Ключ берем из переменных Render
 const supabaseKey = process.env.SUPABASE_KEY;
 
+// Проверка ключа в консоли при старте
 if (!supabaseKey) {
-  console.error("ОШИБКА: Забыли указать SUPABASE_KEY в Render Environment Variables!");
+  console.error("❌ ОШИБКА: SUPABASE_KEY не найден в process.env!");
+} else {
+  console.log("✅ SUPABASE_KEY успешно загружен");
 }
 
-const supabase = createClient(supabaseUrl, supabaseKey || '');
+// Передаем гарантированно непустую строку URL
+const supabase = createClient(supabaseUrl, supabaseKey || 'dummy-key-for-boot');
 
 // GET /api/reviews — получение отзывов из Supabase
 app.get('/api/reviews', async (req, res) => {
