@@ -1,475 +1,333 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Отзывы</title>
-  <!-- Подключаем Telegram WebApp SDK -->
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    }
-    body {
-      background: #f5f5f5;
-      padding: 16px;
-      color: #222;
-    }
-    .container {
-      max-width: 600px;
-      margin: 0 auto;
-      background: #fff;
-      border-radius: 16px;
-      padding: 20px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-    }
-    /* Шапка с рейтингом */
-    .header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-bottom: 1px solid #eee;
-      padding-bottom: 16px;
-      margin-bottom: 16px;
-    }
-    .rating-block {
-      display: flex;
-      align-items: baseline;
-      gap: 8px;
-    }
-    .rating-number {
-      font-size: 32px;
-      font-weight: 700;
-      color: #1a1a1a;
-    }
-    .rating-max {
-      font-size: 18px;
-      color: #888;
-    }
-    .rating-stars {
-      color: #f5a623;
-      font-size: 20px;
-      letter-spacing: 2px;
-    }
-    .reviews-count {
-      color: #888;
-      font-size: 14px;
-    }
-    /* Гистограмма */
-    .histogram {
-      margin: 16px 0 20px 0;
-    }
-    .histogram-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 14px;
-      margin-bottom: 6px;
-    }
-    .histogram-item .star-label {
-      width: 30px;
-      text-align: right;
-      color: #555;
-    }
-    .histogram-item .bar-bg {
-      flex: 1;
-      height: 8px;
-      background: #e9ecef;
-      border-radius: 4px;
-      overflow: hidden;
-    }
-    .histogram-item .bar-fill {
-      height: 100%;
-      background: #f5a623;
-      border-radius: 4px;
-      transition: width 0.3s;
-    }
-    .histogram-item .count {
-      width: 40px;
-      color: #888;
-      font-size: 13px;
-    }
-    /* Форма */
-    .form-title {
-      font-size: 18px;
-      font-weight: 600;
-      margin: 20px 0 8px 0;
-    }
-    .form-sub {
-      font-size: 13px;
-      color: #888;
-      margin-bottom: 16px;
-    }
-    .form-group {
-      margin-bottom: 16px;
-    }
-    .form-group label {
-      display: block;
-      font-weight: 500;
-      margin-bottom: 6px;
-      font-size: 14px;
-    }
-    .stars-selector {
-      display: flex;
-      gap: 8px;
-      font-size: 32px;
-      cursor: pointer;
-      user-select: none;
-    }
-    .stars-selector span {
-      transition: transform 0.1s, color 0.2s;
-      color: #ccc;
-    }
-    .stars-selector span.active {
-      color: #f5a623;
-    }
-    .stars-selector span:hover {
-      transform: scale(1.1);
-    }
-    input[type="text"], textarea {
-      width: 100%;
-      padding: 12px 14px;
-      border: 1px solid #ddd;
-      border-radius: 10px;
-      font-size: 15px;
-      background: #fafafa;
-      transition: border 0.2s;
-    }
-    input[type="text"]:focus, textarea:focus {
-      outline: none;
-      border-color: #f5a623;
-      background: #fff;
-    }
-    textarea {
-      min-height: 80px;
-      resize: vertical;
-    }
-    .btn-submit {
-      width: 100%;
-      padding: 14px;
-      background: #f5a623;
-      border: none;
-      border-radius: 12px;
-      color: #fff;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    .btn-submit:active {
-      background: #d48d1c;
-    }
-    .btn-submit:disabled {
-      opacity: 0.6;
-      pointer-events: none;
-    }
-    /* Список отзывов */
-    .reviews-list {
-      margin-top: 24px;
-      border-top: 1px solid #eee;
-      padding-top: 16px;
-    }
-    .reviews-list h3 {
-      font-size: 16px;
-      margin-bottom: 12px;
-      color: #333;
-    }
-    .review-item {
-      background: #f9f9f9;
-      padding: 12px 14px;
-      border-radius: 12px;
-      margin-bottom: 10px;
-    }
-    .review-item .review-header {
-      display: flex;
-      justify-content: space-between;
-      font-size: 14px;
-      color: #555;
-      margin-bottom: 4px;
-    }
-    .review-item .review-header .name {
-      font-weight: 500;
-    }
-    .review-item .review-header .stars {
-      color: #f5a623;
-    }
-    .review-item .review-text {
-      font-size: 14px;
-      color: #222;
-      word-break: break-word;
-    }
-    .empty-reviews {
-      color: #999;
-      text-align: center;
-      padding: 20px 0;
-    }
-    .support-link {
-      margin-top: 16px;
-      text-align: center;
-      font-size: 13px;
-    }
-    .support-link a {
-      color: #f5a623;
-      text-decoration: none;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Отзывы Telegram Mini App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --bg-color: var(--tg-theme-bg-color, #f4f4f5);
+            --text-color: var(--tg-theme-text-color, #18181b);
+            --card-bg: var(--tg-theme-secondary-bg-color, #ffffff);
+            --button-bg: var(--tg-theme-button-color, #2563eb);
+            --button-text: var(--tg-theme-button-text-color, #ffffff);
+            --hint-color: var(--tg-theme-hint-color, #71717a);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 16px;
+            box-sizing: border-box;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+
+        h2, h3 {
+            margin-top: 0;
+            margin-bottom: 12px;
+        }
+
+        .rating-stars {
+            display: flex;
+            gap: 8px;
+            font-size: 28px;
+            cursor: pointer;
+            margin: 8px 0;
+        }
+
+        .star {
+            color: #d1d5db;
+            transition: color 0.15s ease-in-out;
+        }
+
+        .star.active {
+            color: #f59e0b;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            color: var(--hint-color);
+            margin-bottom: 4px;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #e4e4e7;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 15px;
+            background: var(--card-bg);
+            color: var(--text-color);
+        }
+
+        button.btn-submit {
+            width: 100%;
+            padding: 12px;
+            background: var(--button-bg);
+            color: var(--button-text);
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+
+        .stats-summary {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #f4f4f5;
+        }
+
+        .avg-score {
+            font-size: 38px;
+            font-weight: bold;
+            color: #f59e0b;
+        }
+
+        .review-item {
+            border-bottom: 1px solid #f4f4f5;
+            padding: 12px 0;
+        }
+
+        .review-item:last-child {
+            border-bottom: none;
+        }
+
+        .review-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .author-name {
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .review-date {
+            font-size: 12px;
+            color: var(--hint-color);
+        }
+
+        .review-rating {
+            color: #f59e0b;
+            margin: 4px 0;
+        }
+
+        .private-badge {
+            background: #fee2e2;
+            color: #991b1b;
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 6px;
+            font-weight: normal;
+        }
+    </style>
 </head>
 <body>
-  <div class="container" id="app">
-    <!-- Шапка с рейтингом -->
-    <div class="header">
-      <div class="rating-block">
-        <span class="rating-number" id="avgRating">0.0</span>
-        <span class="rating-max">/ 5</span>
-        <span class="rating-stars" id="starDisplay">☆☆☆☆☆</span>
-      </div>
-      <span class="reviews-count" id="totalCount">0 отзывов</span>
-    </div>
 
-    <!-- Гистограмма -->
-    <div class="histogram" id="histogramContainer">
-      <!-- Заполняется JS -->
-    </div>
-
-    <!-- Форма отзыва -->
-    <div class="form-title">Ваш отзыв</div>
-
-    <div class="form-group">
-      <label>Оценка:</label>
-      <div class="stars-selector" id="starsSelector">
-        <span data-value="1">⭐</span>
-        <span data-value="2">⭐</span>
-        <span data-value="3">⭐</span>
-        <span data-value="4">⭐</span>
-        <span data-value="5">⭐</span>
-      </div>
-    </div>
-
-    <div class="form-group">
-      <label>Никнейм:</label>
-      <input type="text" id="nicknameInput" placeholder="Nikita" value="Nikita">
-    </div>
-
-    <div class="form-group">
-      <label>Текст:</label>
-      <textarea id="commentInput" placeholder="Как прошла сделка?"></textarea>
-    </div>
-
-    <button class="btn-submit" id="submitBtn">Опубликовать</button>
-
-    <!-- Список последних отзывов -->
-    <div class="reviews-list">
-      <h3>Все отзывы <span id="totalBadge">(0)</span></h3>
-      <div id="reviewsContainer">
-        <div class="empty-reviews">Пока нет отзывов</div>
-      </div>
-    </div>
-
-    <div class="support-link">
-    </div>
-  </div>
-
-  <script>
-    (function() {
-      const tg = window.Telegram.WebApp;
-      tg.expand(); // разворачиваем на весь экран
-
-      // Элементы DOM
-      const avgRatingEl = document.getElementById('avgRating');
-      const starDisplayEl = document.getElementById('starDisplay');
-      const totalCountEl = document.getElementById('totalCount');
-      const histogramContainer = document.getElementById('histogramContainer');
-      const starsSelector = document.getElementById('starsSelector');
-      const nicknameInput = document.getElementById('nicknameInput');
-      const commentInput = document.getElementById('commentInput');
-      const submitBtn = document.getElementById('submitBtn');
-      const reviewsContainer = document.getElementById('reviewsContainer');
-      const totalBadge = document.getElementById('totalBadge');
-
-      // Переменные состояния
-      let selectedRating = 0;
-      let allReviews = [];
-      let stats = { total: 0, average: 0, distribution: {1:0,2:0,3:0,4:0,5:0} };
-
-      // ---- Вспомогательные функции ----
-      function renderStars(rating) {
-        return '★'.repeat(rating) + '☆'.repeat(5 - rating);
-      }
-
-      // Обновить интерфейс на основе данных stats и allReviews
-      function updateUI() {
-        // Средний рейтинг
-        avgRatingEl.textContent = stats.average ? stats.average.toFixed(1) : '0.0';
-        const fullStars = Math.round(stats.average);
-        starDisplayEl.textContent = renderStars(fullStars);
-        totalCountEl.textContent = stats.total + ' ' + declension(stats.total, ['отзыв', 'отзыва', 'отзывов']);
-
-        // Гистограмма
-        let html = '';
-        const maxCount = Math.max(...Object.values(stats.distribution), 1);
-        for (let i = 5; i >= 1; i--) {
-          const count = stats.distribution[i] || 0;
-          const percent = maxCount > 0 ? (count / maxCount) * 100 : 0;
-          html += `
-            <div class="histogram-item">
-              <span class="star-label">${i} ★</span>
-              <div class="bar-bg"><div class="bar-fill" style="width:${percent}%"></div></div>
-              <span class="count">${count}</span>
+<div class="container">
+    <!-- Форма отправки отзыва -->
+    <div class="card">
+        <h3>Оставить отзыв</h3>
+        <form id="reviewForm">
+            <div class="form-group">
+                <label>Ваше имя</label>
+                <input type="text" id="authorName" placeholder="Имя" required>
             </div>
-          `;
-        }
-        histogramContainer.innerHTML = html;
 
-        // Общее количество в заголовке списка
-        totalBadge.textContent = `(${stats.total})`;
-
-        // Список отзывов (последние 20)
-        if (allReviews.length === 0) {
-          reviewsContainer.innerHTML = '<div class="empty-reviews">Пока нет отзывов</div>';
-        } else {
-          let listHtml = '';
-          const showReviews = allReviews.slice(0, 20);
-          showReviews.forEach(r => {
-            listHtml += `
-              <div class="review-item">
-                <div class="review-header">
-                  <span class="name">${escapeHtml(r.nickname || 'Аноним')}</span>
-                  <span class="stars">${renderStars(r.rating)}</span>
+            <div class="form-group">
+                <label>Ваша оценка</label>
+                <div class="rating-stars" id="starSelector">
+                    <span class="star" data-value="1">★</span>
+                    <span class="star" data-value="2">★</span>
+                    <span class="star" data-value="3">★</span>
+                    <span class="star" data-value="4">★</span>
+                    <span class="star" data-value="5">★</span>
                 </div>
-                <div class="review-text">${escapeHtml(r.comment || '')}</div>
-              </div>
+            </div>
+
+            <div class="form-group">
+                <label>Ваш отзыв</label>
+                <textarea id="reviewText" rows="3" placeholder="Расскажите о впечатлениях..." required></textarea>
+            </div>
+
+            <button type="submit" class="btn-submit">Отправить</button>
+        </form>
+    </div>
+
+    <!-- Список отзывов -->
+    <div class="card">
+        <h3>Отзывы</h3>
+        <div class="stats-summary">
+            <div class="avg-score" id="avgScore">0.0</div>
+            <div>
+                <div id="totalCount">Всего отзывов: 0</div>
+                <div style="font-size: 11px; color: var(--hint-color); margin-top: 2px;">
+                    * Отзывы с оценкой ниже 4★ видны только их авторам
+                </div>
+            </div>
+        </div>
+        <div id="reviewsList">Загрузка отзывов...</div>
+    </div>
+</div>
+
+<script>
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+        tg.ready();
+        tg.expand();
+    }
+
+    // Извлекаем данные пользователя из Telegram SDK
+    const currentUserId = tg?.initDataUnsafe?.user?.id ? String(tg.initDataUnsafe.user.id) : null;
+    const defaultName = tg?.initDataUnsafe?.user?.first_name || 'Nikita';
+
+    document.getElementById('authorName').value = defaultName;
+
+    let selectedRating = 5;
+
+    // Логика выбора звёзд
+    const stars = document.querySelectorAll('#starSelector .star');
+    function setRating(val) {
+        selectedRating = val;
+        stars.forEach(star => {
+            const ratingVal = parseInt(star.getAttribute('data-value'));
+            if (ratingVal <= val) {
+                star.classList.add('active');
+            } else {
+                star.classList.remove('active');
+            }
+        });
+    }
+    setRating(5);
+
+    stars.forEach(star => {
+        star.addEventListener('click', () => {
+            setRating(parseInt(star.getAttribute('data-value')));
+        });
+    });
+
+    // Загрузка списка отзывов
+    async function loadReviews() {
+        try {
+            const url = currentUserId 
+                ? `/api/reviews?userId=${encodeURIComponent(currentUserId)}` 
+                : '/api/reviews';
+
+            const response = await fetch(url);
+            const reviews = await response.json();
+            renderReviews(reviews);
+        } catch (err) {
+            console.error('Ошибка при загрузке отзывов:', err);
+            document.getElementById('reviewsList').innerText = 'Не удалось загрузить отзывы.';
+        }
+    }
+
+    // Отображение отзывов
+    function renderReviews(reviews) {
+        const listEl = document.getElementById('reviewsList');
+        const avgEl = document.getElementById('avgScore');
+        const countEl = document.getElementById('totalCount');
+
+        if (!reviews || reviews.length === 0) {
+            listEl.innerHTML = '<p style="color: var(--hint-color);">Отзывов пока нет.</p>';
+            avgEl.innerText = '0.0';
+            countEl.innerText = 'Всего отзывов: 0';
+            return;
+        }
+
+        const sum = reviews.reduce((acc, r) => acc + r.rating, 0);
+        const avg = (sum / reviews.length).toFixed(1);
+        avgEl.innerText = avg;
+        countEl.innerText = `Всего отзывов: ${reviews.length}`;
+
+        listEl.innerHTML = reviews.map(r => {
+            const isPrivate = r.rating < 4;
+            const privateBadge = isPrivate ? '<span class="private-badge">Виден только вам</span>' : '';
+            const starsText = '★'.repeat(r.rating) + '☆'.repeat(5 - r.rating);
+
+            return `
+                <div class="review-item">
+                    <div class="review-header">
+                        <span class="author-name">${escapeHtml(r.name)} ${privateBadge}</span>
+                        <span class="review-date">${r.date || ''}</span>
+                    </div>
+                    <div class="review-rating">${starsText}</div>
+                    <div>${escapeHtml(r.text)}</div>
+                </div>
             `;
-          });
-          reviewsContainer.innerHTML = listHtml;
-        }
-      }
+        }).join('');
+    }
 
-      // Простая защита от XSS
-      function escapeHtml(text) {
-        if (!text) return '';
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-      }
+    function escapeHtml(text) {
+        return (text || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
 
-      // Склонение для слова "отзыв"
-      function declension(num, forms) {
-        const n = Math.abs(num) % 100;
-        const n1 = n % 10;
-        if (n > 10 && n < 20) return forms[2];
-        if (n1 > 1 && n1 < 5) return forms[1];
-        if (n1 === 1) return forms[0];
-        return forms[2];
-      }
+    // Обработка отправки формы
+    document.getElementById('reviewForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
 
-      // ---- Загрузка данных с сервера ----
-      async function fetchData() {
-        try {
-          const res = await fetch('/api/reviews');
-          if (!res.ok) throw new Error('Ошибка загрузки');
-          const data = await res.json();
-          stats = {
-            total: data.total || 0,
-            average: data.average || 0,
-            distribution: data.distribution || {1:0,2:0,3:0,4:0,5:0}
-          };
-          allReviews = data.reviews || [];
-          updateUI();
-        } catch (err) {
-          console.error(err);
-          tg.showAlert('Не удалось загрузить отзывы');
-        }
-      }
+        const name = document.getElementById('authorName').value.trim();
+        const text = document.getElementById('reviewText').value.trim();
 
-      // ---- Отправка отзыва ----
-      async function submitReview() {
-        if (selectedRating === 0) {
-          tg.showAlert('Пожалуйста, выберите оценку');
-          return;
-        }
-        const nickname = nicknameInput.value.trim() || 'Аноним';
-        const comment = commentInput.value.trim();
+        if (!text) return;
 
-        // Блокируем кнопку на время отправки
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Отправка...';
-
-        try {
-          const payload = {
+        const payload = {
+            name,
             rating: selectedRating,
-            nickname: nickname,
-            comment: comment,
-            // можно передать user_id из Telegram, если нужно
-            user_id: tg.initDataUnsafe?.user?.id || null
-          };
+            text,
+            userId: currentUserId
+        };
 
-          const res = await fetch('/api/reviews', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
+        try {
+            const response = await fetch('/api/reviews', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
 
-          if (!res.ok) {
-            const errData = await res.json();
-            throw new Error(errData.error || 'Ошибка сервера');
-          }
-
-          const result = await res.json();
-          tg.showAlert('Спасибо! Ваш отзыв опубликован.');
-          // Очищаем форму
-          selectedRating = 0;
-          document.querySelectorAll('.stars-selector span').forEach(el => el.classList.remove('active'));
-          commentInput.value = '';
-          // Перезагружаем данные
-          await fetchData();
+            if (response.ok) {
+                document.getElementById('reviewText').value = '';
+                loadReviews();
+            } else {
+                alert('Не удалось отправить отзыв');
+            }
         } catch (err) {
-          console.error(err);
-          tg.showAlert('Ошибка при отправке: ' + err.message);
-        } finally {
-          submitBtn.disabled = false;
-          submitBtn.textContent = 'Опубликовать';
+            console.error('Ошибка отправки:', err);
+            alert('Ошибка соединения с сервером');
         }
-      }
+    });
 
-      // ---- Обработчики событий ----
-      // Выбор звёзд
-      starsSelector.querySelectorAll('span').forEach(star => {
-        star.addEventListener('click', function() {
-          const value = parseInt(this.dataset.value);
-          selectedRating = value;
-          starsSelector.querySelectorAll('span').forEach(s => {
-            const v = parseInt(s.dataset.value);
-            s.classList.toggle('active', v <= value);
-          });
-        });
-      });
-
-      // Отправка по кнопке
-      submitBtn.addEventListener('click', submitReview);
-
-      // Поддержка – открываем диалог с ботом (можно заменить на свой юзернейм)
-      const supportLinks = document.querySelectorAll('#supportLink, #supportLink2');
-      supportLinks.forEach(link => {
-        link.addEventListener('click', function(e) {
-          e.preventDefault();
-          tg.openTelegramLink('https://t.me/helps_deal'); // замените на реальный
-        });
-      });
-
-      // ---- Инициализация ----
-      fetchData();
-
-      // Если пользователь уже авторизован, можно подставить его ник
-      const user = tg.initDataUnsafe?.user;
-      if (user && user.username) {
-        nicknameInput.value = user.username;
-      } else if (user && user.first_name) {
-        nicknameInput.value = user.first_name;
-      }
-    })();
-  </script>
+    // Первичная загрузка
+    loadReviews();
+</script>
 </body>
 </html>
