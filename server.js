@@ -1,103 +1,125 @@
 const express = require('express');
-const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
+// Путь к файлу с данными
+const DATA_FILE = path.join(__dirname, 'reviews.json');
+
+// Middleware
 app.use(express.json());
 
-// Раздаём статические файлы (index.html)
-app.use(express.static(path.join(__dirname)));
+// ===== ЖЁСТКО ОТДАЁМ index.html =====
+app.get('/', (req, res) => {
+    // ПРОВЕРЯЕМ ВСЕ ВОЗМОЖНЫЕ МЕСТА
+    const possiblePaths = [
+        path.join(__dirname, 'public', 'index.html'),
+        path.join(__dirname, 'index.html'),
+        path.join('/app', 'public', 'index.html'),
+        path.join('/app', 'index.html')
+    ];
 
-const DB_FILE = path.join(__dirname, 'reviews.json');
-
-// Чтение базы данных из файла
-function readReviews() {
-    try {
-        if (!fs.existsSync(DB_FILE)) {
-            fs.writeFileSync(DB_FILE, JSON.stringify([], null, 2), 'utf8');
-            return [];
+    for (const indexPath of possiblePaths) {
+        if (fs.existsSync(indexPath)) {
+            console.log(`✅ Найден index.html: ${indexPath}`);
+            return res.sendFile(indexPath);
         }
-        const data = fs.readFileSync(DB_FILE, 'utf8');
-        return JSON.parse(data || '[]');
+    }
+
+    // Если ничего не нашли
+    console.log('❌ index.html НЕ НАЙДЕН!');
+    console.log('📁 __dirname =', __dirname);
+    console.log('📂 Файлы в __dirname:', fs.readdirSync(__dirname));
+    
+    if (fs.existsSync(path.join(__dirname, 'public'))) {
+        console.log('📂 Файлы в public:', fs.readdirSync(path.join(__dirname, 'public')));
+    }
+
+    res.status(404).send(`
+        <h1>❌ index.html не найден</h1>
+        <p>Текущая папка: ${__dirname}</p>
+        <p>Файлы в папке: ${fs.readdirSync(__dirname).join(', ')}</p>
+        ${fs.existsSync(path.join(__dirname, 'public')) ? `<p>Файлы в public: ${fs.readdirSync(path.join(__dirname, 'public')).join(', ')}</p>` : '<p>Папка public не найдена</p>'}
+    `);
+});
+// ======================================
+
+// ---- Вспомогательные функции ----
+function readReviews() {
+    if (!fs.existsSync(DATA_FILE)) return [];
+    try {
+        const data = fs.readFileSync(DATA_FILE, 'utf8');
+        return JSON.parse(data);
     } catch (err) {
         console.error('Ошибка чтения файла:', err);
         return [];
     }
 }
 
-// Запись базы данных в файл
 function writeReviews(reviews) {
-    try {
-        fs.writeFileSync(DB_FILE, JSON.stringify(reviews, null, 2), 'utf8');
-        return true;
-    } catch (err) {
-        console.error('Ошибка записи файла:', err);
-        return false;
-    }
+    fs.writeFileSync(DATA_FILE, JSON.stringify(reviews, null, 2), 'utf8');
 }
 
-// GET: Получение отзывов
+function computeStats(reviews) {
+    const total = reviews.length;
+    if (total === 0) {
+        return { total: 0, average: 0, distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } };
+    }
+    const sum = reviews.reduce((acc, r) => acc + r.rating, 0);
+    const avg = sum / total;
+    const dist = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    reviews.forEach(r => {
+        if (r.rating >= 1 && r.rating <= 5) {
+            dist[r.rating] = (dist[r.rating] || 0) + 1;
+        }
+    });
+    return {
+        total,
+        average: Math.round(avg * 10) / 10,
+        distribution: dist
+    };
+}
+
+// ---- API ----
 app.get('/api/reviews', (req, res) => {
     const reviews = readReviews();
-    const currentUserId = req.query.userId ? String(req.query.userId) : null;
-
-    // Логика видимости:
-    // 1. Оценка >= 4 — видна ВСЕМ.
-    // 2. Оценка < 4 — видна ТОЛЬКО автору (совпадение userId).
-    const visibleReviews = reviews.filter(review => {
-        if (review.rating >= 4) {
-            return true;
-        }
-        if (currentUserId && String(review.userId) === currentUserId) {
-            return true;
-        }
-        return false;
-    });
-
-    res.json(visibleReviews);
+    const stats = computeStats(reviews);
+    const recent = reviews.slice(-50).reverse();
+    res.json({ ...stats, reviews: recent });
 });
 
-// POST: Добавление нового отзыва
 app.post('/api/reviews', (req, res) => {
-    const { name, rating, text, userId } = req.body;
+    const { rating, nickname, comment, user_id } = req.body;
 
-    if (!rating || !text) {
-        return res.status(400).json({ error: 'Рейтинг и текст обязательны для заполнения' });
+    if (!rating || typeof rating !== 'number' || rating < 1 || rating > 5) {
+        return res.status(400).json({ error: 'Рейтинг должен быть от 1 до 5' });
     }
 
     const reviews = readReviews();
-
     const newReview = {
-        id: Date.now(),
-        name: name && name.trim() ? name.trim() : 'Аноним',
-        rating: Number(rating),
-        text: text.trim(),
-        userId: userId ? String(userId) : null, // Запоминаем Telegram ID автора
-        date: new Date().toLocaleDateString('ru-RU', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric'
-        })
+        id: Date.now() + Math.random(),
+        rating: rating,
+        nickname: (nickname || 'Аноним').trim().slice(0, 50),
+        comment: (comment || '').trim().slice(0, 500),
+        user_id: user_id || null,
+        created_at: new Date().toISOString()
     };
 
-    reviews.unshift(newReview); // Добавляем новый отзыв в начало списка
+    reviews.push(newReview);
+    writeReviews(reviews);
 
-    if (writeReviews(reviews)) {
-        res.status(201).json(newReview);
-    } else {
-        res.status(500).json({ error: 'Не удалось сохранить отзыв' });
-    }
+    res.status(201).json({ success: true, review: newReview });
 });
 
-// Возврат главной страницы
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
-
+// Запуск сервера
 app.listen(PORT, () => {
-    console.log(`Сервер запущен на порту ${PORT}`);
+    console.log(`✅ Сервер запущен на порту ${PORT}`);
+    console.log(`📊 API: /api/reviews`);
+    console.log(`📁 __dirname = ${__dirname}`);
+    console.log(`📂 Файлы в __dirname:`, fs.readdirSync(__dirname));
+    if (fs.existsSync(path.join(__dirname, 'public'))) {
+        console.log(`📂 Файлы в public:`, fs.readdirSync(path.join(__dirname, 'public')));
+    }
 });
