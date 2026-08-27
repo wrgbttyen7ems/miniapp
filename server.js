@@ -1,23 +1,26 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.use(express.static('.')); // для раздачи index.html
 
-// Подключение к Supabase через переменные окружения
+// Раздача статики
+app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(__dirname));
+
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
-  console.error("ОШИБКА: Не заданы SUPABASE_URL или SUPABASE_KEY в Environment Variables!");
+  console.error("ОШИБКА: Не заданы SUPABASE_URL или SUPABASE_KEY в Render Environment Variables!");
 }
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = createClient(supabaseUrl || '', supabaseKey || '');
 
-// GET /api/reviews — получение последних 50 отзывов
+// GET /api/reviews — получение отзывов из Supabase
 app.get('/api/reviews', async (req, res) => {
   try {
     const { data, error } = await supabase
@@ -27,14 +30,14 @@ app.get('/api/reviews', async (req, res) => {
       .limit(50);
 
     if (error) throw error;
-    res.json(data);
+    res.json(data || []);
   } catch (error) {
     console.error('Ошибка при получении отзывов:', error.message);
     res.status(500).json({ error: 'Не удалось загрузить отзывы' });
   }
 });
 
-// POST /api/reviews — добавление нового отзыва
+// POST /api/reviews — добавление отзыва в Supabase
 app.post('/api/reviews', async (req, res) => {
   try {
     const { user_id, text, rating } = req.body;
@@ -63,7 +66,7 @@ app.post('/api/reviews', async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
-  console.log(`Сервер запущен на порту ${PORT}`);
+  console.log(`✅ Сервер запущен на порту ${PORT}`);
 });
