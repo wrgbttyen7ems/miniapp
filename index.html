@@ -1,1 +1,334 @@
 
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Отзывы Telegram Mini App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --bg-color: var(--tg-theme-bg-color, #f4f4f5);
+            --text-color: var(--tg-theme-text-color, #18181b);
+            --card-bg: var(--tg-theme-secondary-bg-color, #ffffff);
+            --button-bg: var(--tg-theme-button-color, #2563eb);
+            --button-text: var(--tg-theme-button-text-color, #ffffff);
+            --hint-color: var(--tg-theme-hint-color, #71717a);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 16px;
+            box-sizing: border-box;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+
+        h2, h3 {
+            margin-top: 0;
+            margin-bottom: 12px;
+        }
+
+        .rating-stars {
+            display: flex;
+            gap: 8px;
+            font-size: 28px;
+            cursor: pointer;
+            margin: 8px 0;
+        }
+
+        .star {
+            color: #d1d5db;
+            transition: color 0.15s ease-in-out;
+        }
+
+        .star.active {
+            color: #f59e0b;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            color: var(--hint-color);
+            margin-bottom: 4px;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #e4e4e7;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 15px;
+            background: var(--card-bg);
+            color: var(--text-color);
+        }
+
+        button.btn-submit {
+            width: 100%;
+            padding: 12px;
+            background: var(--button-bg);
+            color: var(--button-text);
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+
+        .stats-summary {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #f4f4f5;
+        }
+
+        .avg-score {
+            font-size: 38px;
+            font-weight: bold;
+            color: #f59e0b;
+        }
+
+        .review-item {
+            border-bottom: 1px solid #f4f4f5;
+            padding: 12px 0;
+        }
+
+        .review-item:last-child {
+            border-bottom: none;
+        }
+
+        .review-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .author-name {
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .review-date {
+            font-size: 12px;
+            color: var(--hint-color);
+        }
+
+        .review-rating {
+            color: #f59e0b;
+            margin: 4px 0;
+        }
+
+        .private-badge {
+            background: #fee2e2;
+            color: #991b1b;
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 6px;
+            font-weight: normal;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- Форма отправки отзыва -->
+    <div class="card">
+        <h3>Оставить отзыв</h3>
+        <form id="reviewForm">
+            <div class="form-group">
+                <label>Ваше имя</label>
+                <input type="text" id="authorName" placeholder="Имя" required>
+            </div>
+
+            <div class="form-group">
+                <label>Ваша оценка</label>
+                <div class="rating-stars" id="starSelector">
+                    <span class="star" data-value="1">★</span>
+                    <span class="star" data-value="2">★</span>
+                    <span class="star" data-value="3">★</span>
+                    <span class="star" data-value="4">★</span>
+                    <span class="star" data-value="5">★</span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Ваш отзыв</label>
+                <textarea id="reviewText" rows="3" placeholder="Расскажите о впечатлениях..." required></textarea>
+            </div>
+
+            <button type="submit" class="btn-submit">Отправить</button>
+        </form>
+    </div>
+
+    <!-- Список отзывов -->
+    <div class="card">
+        <h3>Отзывы</h3>
+        <div class="stats-summary">
+            <div class="avg-score" id="avgScore">0.0</div>
+            <div>
+                <div id="totalCount">Всего отзывов: 0</div>
+                <div style="font-size: 11px; color: var(--hint-color); margin-top: 2px;">
+                    * Отзывы с оценкой ниже 4★ видны только их авторам
+                </div>
+            </div>
+        </div>
+        <div id="reviewsList">Загрузка отзывов...</div>
+    </div>
+</div>
+
+<script>
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+        tg.ready();
+        tg.expand();
+    }
+
+    // Извлекаем данные пользователя из Telegram SDK
+    const currentUserId = tg?.initDataUnsafe?.user?.id ? String(tg.initDataUnsafe.user.id) : null;
+    const defaultName = tg?.initDataUnsafe?.user?.first_name || 'Nikita';
+
+    document.getElementById('authorName').value = defaultName;
+
+    let selectedRating = 5;
+
+    // Логика выбора звёзд
+    const stars = document.querySelectorAll('#starSelector .star');
+    function setRating(val) {
+        selectedRating = val;
+        stars.forEach(star => {
+            const ratingVal = parseInt(star.getAttribute('data-value'));
+            if (ratingVal <= val) {
+                star.classList.add('active');
+            } else {
+                star.classList.remove('active');
+            }
+        });
+    }
+    setRating(5);
+
+    stars.forEach(star => {
+        star.addEventListener('click', () => {
+            setRating(parseInt(star.getAttribute('data-value')));
+        });
+    });
+
+    // Загрузка списка отзывов
+    async function loadReviews() {
+        try {
+            const url = currentUserId 
+                ? `/api/reviews?userId=${encodeURIComponent(currentUserId)}` 
+                : '/api/reviews';
+
+            const response = await fetch(url);
+            const reviews = await response.json();
+            renderReviews(reviews);
+        } catch (err) {
+            console.error('Ошибка при загрузке отзывов:', err);
+            document.getElementById('reviewsList').innerText = 'Не удалось загрузить отзывы.';
+        }
+    }
+
+    // Отображение отзывов
+    function renderReviews(reviews) {
+        const listEl = document.getElementById('reviewsList');
+        const avgEl = document.getElementById('avgScore');
+        const countEl = document.getElementById('totalCount');
+
+        if (!reviews || reviews.length === 0) {
+            listEl.innerHTML = '<p style="color: var(--hint-color);">Отзывов пока нет.</p>';
+            avgEl.innerText = '0.0';
+            countEl.innerText = 'Всего отзывов: 0';
+            return;
+        }
+
+        const sum = reviews.reduce((acc, r) => acc + r.rating, 0);
+        const avg = (sum / reviews.length).toFixed(1);
+        avgEl.innerText = avg;
+        countEl.innerText = `Всего отзывов: ${reviews.length}`;
+
+        listEl.innerHTML = reviews.map(r => {
+            const isPrivate = r.rating < 4;
+            const privateBadge = isPrivate ? '<span class="private-badge">Виден только вам</span>' : '';
+            const starsText = '★'.repeat(r.rating) + '☆'.repeat(5 - r.rating);
+
+            return `
+                <div class="review-item">
+                    <div class="review-header">
+                        <span class="author-name">${escapeHtml(r.name)} ${privateBadge}</span>
+                        <span class="review-date">${r.date || ''}</span>
+                    </div>
+                    <div class="review-rating">${starsText}</div>
+                    <div>${escapeHtml(r.text)}</div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function escapeHtml(text) {
+        return (text || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    // Обработка отправки формы
+    document.getElementById('reviewForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const name = document.getElementById('authorName').value.trim();
+        const text = document.getElementById('reviewText').value.trim();
+
+        if (!text) return;
+
+        const payload = {
+            name,
+            rating: selectedRating,
+            text,
+            userId: currentUserId
+        };
+
+        try {
+            const response = await fetch('/api/reviews', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                document.getElementById('reviewText').value = '';
+                loadReviews();
+            } else {
+                alert('Не удалось отправить отзыв');
+            }
+        } catch (err) {
+            console.error('Ошибка отправки:', err);
+            alert('Ошибка соединения с сервером');
+        }
+    });
+
+    // Первичная загрузка
+    loadReviews();
+</script>
+</body>
+</html>
