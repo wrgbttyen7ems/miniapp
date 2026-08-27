@@ -19,7 +19,7 @@ console.log('Используемый URL:', `"${supabaseUrl}"`);
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// GET /api/reviews — получение отзывов
+// GET /api/reviews — отправляем отзывы с запасом по ключам
 app.get('/api/reviews', async (req, res) => {
   try {
     const { data, error } = await supabase
@@ -29,34 +29,34 @@ app.get('/api/reviews', async (req, res) => {
       .limit(50);
 
     if (error) {
-      console.error('Ошибка Supabase при чтении:', error);
-      throw error;
+      console.error('Ошибка чтения из Supabase:', error);
+      return res.status(500).json({ error: error.message });
     }
 
-    // Форматируем массив, чтобы фронтенд точно получил нужные поля
-    const formattedReviews = (data || []).map(r => ({
+    // Собираем объекты так, чтобы фронтенд точно нашел нужное поле
+    const formatted = (data || []).map(r => ({
       id: r.id,
       user_id: r.user_id,
-      author: r.user_id ? `Пользователь ${r.user_id}` : 'Аноним',
+      author: r.user_id ? `ID: ${r.user_id}` : 'Аноним',
+      name: r.user_id ? `ID: ${r.user_id}` : 'Аноним',
       text: r.text,
+      comment: r.text,
+      review: r.text,
       rating: r.rating || 5,
-      date: r.created_at
+      stars: r.rating || 5,
+      date: r.created_at || new Date().toISOString()
     }));
 
-    res.json(formattedReviews);
-  } catch (error) {
-    console.error('Ошибка при получении отзывов:', error.message);
-    res.status(500).json({ error: 'Не удалось загрузить отзывы' });
+    res.json(formatted);
+  } catch (err) {
+    console.error('Ошибка сервера:', err);
+    res.status(500).json({ error: 'Ошибка сервера' });
   }
 });
 
-// POST /api/reviews
-// POST /api/reviews — добавление отзыва
+// POST /api/reviews — создаем отзыв и сразу отдаем обновленный список
 app.post('/api/reviews', async (req, res) => {
   try {
-    console.log('Пришедшие данные:', req.body); // Логируем в консоль Render для проверки
-
-    // Собираем текст из любого возможного названия поля
     const reviewText = req.body.text || req.body.comment || req.body.review || req.body.message || req.body.content;
     const { user_id, rating } = req.body;
 
@@ -64,7 +64,7 @@ app.post('/api/reviews', async (req, res) => {
       return res.status(400).json({ error: 'Текст отзыва не может быть пустым' });
     }
 
-    const { data, error } = await supabase
+    const { error: insertError } = await supabase
       .from('reviews')
       .insert([
         {
@@ -72,14 +72,19 @@ app.post('/api/reviews', async (req, res) => {
           text: String(reviewText).trim(),
           rating: rating || 5
         }
-      ])
-      .select();
+      ]);
 
-    if (error) throw error;
+    if (insertError) throw insertError;
 
-    res.status(201).json({ success: true, review: data[0] });
+    // Сразу запрашиваем свежий список из базы
+    const { data } = await supabase
+      .from('reviews')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    res.status(201).json({ success: true, reviews: data || [] });
   } catch (error) {
-    console.error('Ошибка при сохранении отзыва:', error.message);
+    console.error('Ошибка сохранения:', error.message);
     res.status(500).json({ error: 'Не удалось сохранить отзыв' });
   }
 });
